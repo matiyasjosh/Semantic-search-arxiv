@@ -1,5 +1,6 @@
 import arxiv
 import pandas as pd
+from src.config import DATA_DIR
 
 # Define your query and settings
 search = arxiv.Search(
@@ -21,10 +22,6 @@ for result in client.results(search):
         "pdf_url": result.pdf_url
     })
 
-    print
-
 # Display as a table
 df = pd.DataFrame(results)
-df.to_csv("data.csv", index=False)
-
-print(df)
+df.to_csv(f"{DATA_DIR}/data.csv", index=False)
