@@ -5,22 +5,6 @@ import pandas as pd
 from sentence_transformers import SentenceTransformer
 from src.config import MODEL_NAME, DATA_DIR
 
-st.set_page_config(page_title="Semantic Search", page_icon=":mag_right:", layout="wide")
-
-st.title("Semantic Arxiv Search")
-
-@st.cache_resource
-def load_model():
-    model = SentenceTransformer(MODEL_NAME)
-    return model
-
-import streamlit as st
-import faiss
-import numpy as np
-import pandas as pd
-from sentence_transformers import SentenceTransformer
-from src.config import MODEL_NAME, DATA_DIR
-
 # --------------------------
 # Load model, FAISS index, and metadata
 # --------------------------
