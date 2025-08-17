@@ -1,1 +1,11 @@
-requests, fitz
+arxiv
+requests 
+fitz
+faiss-cpu # for efficient similarity search
+pymupdf # for PDF processing
+sentence-transformers # for text embedding
+numpy # for numerical operations
+streamlit # for creating the web app
+
+# use the below command to download the dependencies
+pip install arxiv requests fitz faiss-cpu pymupdf sentence-transformers numpy streamlit
