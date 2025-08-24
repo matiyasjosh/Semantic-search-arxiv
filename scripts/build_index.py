@@ -1,19 +1,27 @@
 import faiss
+import joblib
 import numpy as np
+from src.config import MODEL_NAME, DATA_DIR
 from src.ingestion.arxiv_scrapper import fetch_arxiv
 from src.preprocessing.chunking import chunk_documents
 from src.embeddings.transformer_embedder import TransformerEmbedder
-from src.config import MODEL_NAME, DATA_DIR
+from sklearn.feature_extraction.text import TfidfVectorizer
 
 # fetch metadata
-df = fetch_arxiv("cat:cs.AI", max_results=200)
+df = fetch_arxiv("cat:cs.AI", max_results=100)
 
 # create chunks (from abstracts/summaries)
 chunks = chunk_documents(df["Summary"].tolist())
 
+vectorizer = TfidfVectorizer()
+tfid_matrix = vectorizer.fit_transform(chunks["chunk_text"].tolist())
+
+joblib.dump(vectorizer, f"{DATA_DIR}/vectorizer.pkl")
+joblib.dump(tfid_matrix, f"{DATA_DIR}/tfidf_matrix.pkl")
+
 # generate embeddings
 embedder = TransformerEmbedder(MODEL_NAME)
-embeddings = embedder.encode(chunks, to_tensor=False)
+embeddings = embedder.encode(chunks["chunk_text"].tolist(), to_tensor=False)
 
 # Normalize embeddings
 embeddings = embeddings / np.linalg.norm(embeddings, axis=1, keepdims=True)
