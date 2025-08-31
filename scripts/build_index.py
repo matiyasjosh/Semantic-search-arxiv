@@ -1,39 +1,24 @@
-import faiss
-import joblib
-import numpy as np
-from src.config import MODEL_NAME, DATA_DIR
-from src.ingestion.arxiv_scrapper import fetch_arxiv
-from src.preprocessing.chunking import chunk_documents
-from src.embeddings.transformer_embedder import TransformerEmbedder
-from sklearn.feature_extraction.text import TfidfVectorizer
+import pandas as pd
+from src.ingestion.arxiv_scrapper import fetch_many
+from src.ingestion.parser import dedupe_metadata, save_metadata
+from src.preprocessing.chunking import chunk_documents_from_metadata
+from src.embeddings.embed import compute_tfidf, compute_transformer_embeddings, build_and_save_faiss
+from src.config import DATA_DIR
 
-# fetch metadata
-df = fetch_arxiv("cat:cs.AI", max_results=100)
+# 1) fetch many papers (1000+)
+metadata_df = fetch_many(query="cat:cs.AI", total_results=1200, batch_size=100, sleep_between=0.8)
+print("Fetched", len(metadata_df), "rows")
 
-# create chunks (from abstracts/summaries)
-chunks = chunk_documents(df["Summary"].tolist())
+# 2) clean & dedupe
+metadata_df = dedupe_metadata(metadata_df)
+save_metadata(metadata_df)
 
-vectorizer = TfidfVectorizer()
-tfid_matrix = vectorizer.fit_transform(chunks["chunk_text"].tolist())
+# 3) chunk
+chunks_df = chunk_documents_from_metadata(metadata_df)
 
-joblib.dump(vectorizer, f"{DATA_DIR}/vectorizer.pkl")
-joblib.dump(tfid_matrix, f"{DATA_DIR}/tfidf_matrix.pkl")
+# 4) TF-IDF artifacts
+vectorizer, tfidf_matrix = compute_tfidf(chunks_df)
 
-# generate embeddings
-embedder = TransformerEmbedder(MODEL_NAME)
-embeddings = embedder.encode(chunks["chunk_text"].tolist(), to_tensor=False)
-
-# Normalize embeddings
-embeddings = embeddings / np.linalg.norm(embeddings, axis=1, keepdims=True)
-
-# build FAISS index
-dim = embeddings.shape[1]
-index = faiss.IndexFlatIP(dim)
-index.add(embeddings)
-
-# save FAISS index
-index_path = f"{DATA_DIR}/arxiv_index.faiss"
-faiss.write_index(index, index_path)
-print(f"Saved FAISS index to {index_path}")
-
-print("Build complete! Metadata and FAISS index are ready for Streamlit.")
+# 5) transformer embeddings + faiss
+model, embeddings = compute_transformer_embeddings(chunks_df)
+index = build_and_save_faiss(embeddings)

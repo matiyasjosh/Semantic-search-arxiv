@@ -35,7 +35,7 @@ tfidf_matrix = joblib.load(f"{DATA_DIR}/tfidf_matrix.pkl")
 
 
 
-def hybridSearch(query, model, faiss_index, chunks, k=5, alpha=0.6):
+def hybridSearch(query, model, faiss_index, k=5, alpha=0.6):
     # Embedding query
     query_vec = model.encode([query], convert_to_numpy=True, show_progress_bar=False)
     query_vec = query_vec / np.linalg.norm(query_vec, axis=1, keepdims=True)
